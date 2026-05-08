@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.*
+import com.moov.app.ui.MainScreen
 import com.moov.app.ui.auth.LoginScreen
 import com.moov.app.ui.auth.RegisterScreen
 
@@ -13,12 +14,17 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            var showRegister by remember { mutableStateOf(false) }
+            var currentScreen by remember { mutableStateOf("login") }
 
-            if (showRegister) {
-                RegisterScreen(onNavigateToLogin = { showRegister = false })
-            } else {
-                LoginScreen(onNavigateToRegister = { showRegister = true })
+            when (currentScreen) {
+                "login" -> LoginScreen(
+                    onNavigateToRegister = { currentScreen = "register" },
+                    onLoginSuccess = { currentScreen = "main" }
+                )
+                "register" -> RegisterScreen(
+                    onNavigateToLogin = { currentScreen = "login" }
+                )
+                "main" -> MainScreen()
             }
         }
     }

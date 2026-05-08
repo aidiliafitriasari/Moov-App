@@ -187,58 +187,6 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit = {}) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                HorizontalDivider(
-                    modifier = Modifier.weight(1f),
-                    color = Color(0xFF2E2E2E),
-                    thickness = 1.dp
-                )
-                Text(
-                    text = "  OR  ",
-                    color = Color(0xFF757575),
-                    fontSize = 14.sp
-                )
-                HorizontalDivider(
-                    modifier = Modifier.weight(1f),
-                    color = Color(0xFF2E2E2E),
-                    thickness = 1.dp
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            OutlinedButton(
-                onClick = { },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(8.dp),
-                border = ButtonDefaults.outlinedButtonBorder.copy(
-                    brush = androidx.compose.ui.graphics.SolidColor(Color(0xFF2E2E2E))
-                ),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color.Transparent
-                )
-            ) {
-                Text(
-                    text = "G",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Sign up with Google",
-                    fontSize = 14.sp,
-                    color = Color.White
-                )
-            }
-
             Spacer(modifier = Modifier.height(32.dp))
 
             Row {
@@ -257,4 +205,4 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit = {}) {
             }
         }
     }
-} 
+}
