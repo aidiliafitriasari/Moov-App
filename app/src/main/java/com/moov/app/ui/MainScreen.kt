@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.sp
 import com.moov.app.R
 import com.moov.app.ui.favorite.FavoriteScreen
 import com.moov.app.ui.home.HomeScreen
+import com.moov.app.ui.profile.EditProfileScreen
 import com.moov.app.ui.profile.ProfileScreen
 import com.moov.app.ui.search.SearchScreen
 
@@ -23,15 +24,26 @@ data class BottomNavItem(
 )
 
 @Composable
-fun MainScreen() {
+fun MainScreen(onLogout: () -> Unit = {}) {
+    var selectedIndex by remember { mutableStateOf(0) }
+    var showEditProfile by remember { mutableStateOf(false) }
+
+    if (showEditProfile) {
+        EditProfileScreen(onNavigateBack = { showEditProfile = false })
+        return
+    }
+
     val navItems = listOf(
         BottomNavItem("Home", R.drawable.home, { HomeScreen() }),
         BottomNavItem("Search", R.drawable.search, { SearchScreen() }),
         BottomNavItem("Favorite", R.drawable.favorite, { FavoriteScreen() }),
-        BottomNavItem("Profile", R.drawable.profil, { ProfileScreen() })
+        BottomNavItem("Profile", R.drawable.profil, {
+            ProfileScreen(
+                onNavigateToEdit = { showEditProfile = true },
+                onLogout = onLogout
+            )
+        })
     )
-
-    var selectedIndex by remember { mutableStateOf(0) }
 
     Scaffold(
         containerColor = Color(0xFF0D0D0D),

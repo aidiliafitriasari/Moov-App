@@ -24,7 +24,9 @@ class MainActivity : ComponentActivity() {
                 "register" -> RegisterScreen(
                     onNavigateToLogin = { currentScreen = "login" }
                 )
-                "main" -> MainScreen()
+                "main" -> MainScreen(
+                    onLogout = { currentScreen = "login" }
+                )
             }
         }
     }

@@ -5,10 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,11 +16,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(onNavigateToEdit: () -> Unit = {}, onLogout: () -> Unit = {}) {
+fun EditProfileScreen(onNavigateBack: () -> Unit = {}) {
+    var fullName by remember { mutableStateOf("Aidilia Fitriasari") }
+    var email by remember { mutableStateOf("aidilia811@gmail.com") }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -29,30 +35,38 @@ fun ProfileScreen(onNavigateToEdit: () -> Unit = {}, onLogout: () -> Unit = {}) 
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // ========== TOP BAR: Judul + Edit ==========
+        // ========== TOP BAR ==========
         Box(
             modifier = Modifier.fillMaxWidth()
         ) {
+            // Tombol Back (Kiri)
+            IconButton(
+                onClick = onNavigateBack,
+                modifier = Modifier.align(Alignment.CenterStart)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
+            }
+
+            // Judul di Tengah
             Text(
-                text = "Profile",
+                text = "Edit Profile",
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.align(Alignment.Center)
             )
 
+            // Tombol Save (Kanan)
             TextButton(
-                onClick = onNavigateToEdit,
+                onClick = { /* Save logic */ },
                 modifier = Modifier.align(Alignment.CenterEnd)
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Edit,
-                    contentDescription = "Edit",
-                    tint = Color(0xFFE50914)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Edit",
+                    text = "Save",
                     color = Color(0xFFE50914),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold
@@ -60,9 +74,9 @@ fun ProfileScreen(onNavigateToEdit: () -> Unit = {}, onLogout: () -> Unit = {}) 
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
-        // ========== FOTO PROFIL (TENGAH) ==========
+        // ========== FOTO PROFIL (TENGAH) - Bisa Diganti ==========
         Box(
             modifier = Modifier
                 .size(80.dp)
@@ -77,6 +91,15 @@ fun ProfileScreen(onNavigateToEdit: () -> Unit = {}, onLogout: () -> Unit = {}) 
                 fontWeight = FontWeight.Bold
             )
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Change Photo",
+            color = Color(0xFFE50914),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -111,45 +134,49 @@ fun ProfileScreen(onNavigateToEdit: () -> Unit = {}, onLogout: () -> Unit = {}) 
         Spacer(modifier = Modifier.height(16.dp))
 
         // Full Name
-        ProfileInfoItem(label = "Full Name", value = "Aidilia Fitriasari")
+        OutlinedTextField(
+            value = fullName,
+            onValueChange = { fullName = it },
+            label = { Text("Full Name", color = Color(0xFFB3B3B3)) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedBorderColor = Color(0xFFE50914),
+                unfocusedBorderColor = Color(0xFF2E2E2E),
+                focusedContainerColor = Color(0xFF1A1A1A),
+                unfocusedContainerColor = Color(0xFF1A1A1A)
+            ),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+        )
 
-        HorizontalDivider(color = Color(0xFF2E2E2E), thickness = 1.dp)
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Email
-        ProfileInfoItem(label = "Email", value = "aidilia811@gmail.com")
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Email", color = Color(0xFFB3B3B3)) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedBorderColor = Color(0xFFE50914),
+                unfocusedBorderColor = Color(0xFF2E2E2E),
+                focusedContainerColor = Color(0xFF1A1A1A),
+                unfocusedContainerColor = Color(0xFF1A1A1A)
+            ),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Done
+            )
+        )
 
         Spacer(modifier = Modifier.height(40.dp))
-
-        // ========== LOGOUT BUTTON ==========
-        Button(
-            onClick = onLogout,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Transparent,
-                contentColor = Color(0xFFE50914)
-            ),
-            border = ButtonDefaults.outlinedButtonBorder.copy(
-                brush = androidx.compose.ui.graphics.SolidColor(Color(0xFFE50914))
-            )
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.Logout,
-                contentDescription = "Logout",
-                tint = Color(0xFFE50914)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Logout",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFFE50914)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
 
         // ========== VERSION ==========
         Text(
@@ -159,26 +186,5 @@ fun ProfileScreen(onNavigateToEdit: () -> Unit = {}, onLogout: () -> Unit = {}) 
         )
 
         Spacer(modifier = Modifier.height(80.dp))
-    }
-}
-
-@Composable
-fun ProfileInfoItem(label: String, value: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp, horizontal = 4.dp)
-    ) {
-        Text(
-            text = label,
-            color = Color(0xFFB3B3B3),
-            fontSize = 14.sp
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = value,
-            color = Color.White,
-            fontSize = 14.sp
-        )
     }
 }
