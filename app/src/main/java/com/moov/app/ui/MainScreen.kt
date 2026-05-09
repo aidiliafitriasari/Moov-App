@@ -1,7 +1,6 @@
 package com.moov.app.ui
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,6 +16,7 @@ import com.moov.app.ui.home.DummyMovie
 import com.moov.app.ui.home.HomeScreen
 import com.moov.app.ui.profile.EditProfileScreen
 import com.moov.app.ui.profile.ProfileScreen
+import com.moov.app.ui.search.DummySearchMovie
 import com.moov.app.ui.search.SearchScreen
 
 data class BottomNavItem(
@@ -30,7 +30,30 @@ fun MainScreen(onLogout: () -> Unit = {}) {
     var selectedIndex by remember { mutableStateOf(0) }
     var showEditProfile by remember { mutableStateOf(false) }
     var selectedMovie by remember { mutableStateOf<DummyMovie?>(null) }
+    var selectedSearchMovie by remember { mutableStateOf<DummySearchMovie?>(null) }
 
+    // Navigasi ke Detail dari Search
+    if (selectedSearchMovie != null) {
+        val movie = selectedSearchMovie!!
+        DetailScreen(
+            movie = DummyMovie(
+                title = movie.title,
+                genre = movie.genre,
+                rating = movie.rating,
+                posterColor = movie.posterColor
+            ),
+            onBack = { selectedSearchMovie = null }
+        )
+        return
+    }
+
+    // Navigasi ke Edit Profile
+    if (showEditProfile) {
+        EditProfileScreen(onNavigateBack = { showEditProfile = false })
+        return
+    }
+
+    // Navigasi ke Detail dari Home
     if (selectedMovie != null) {
         DetailScreen(
             movie = selectedMovie!!,
@@ -39,16 +62,13 @@ fun MainScreen(onLogout: () -> Unit = {}) {
         return
     }
 
-    if (showEditProfile) {
-        EditProfileScreen(onNavigateBack = { showEditProfile = false })
-        return
-    }
-
     val navItems = listOf(
         BottomNavItem("Home", R.drawable.home, {
             HomeScreen(onNavigateToDetail = { selectedMovie = it })
         }),
-        BottomNavItem("Search", R.drawable.search, { SearchScreen() }),
+        BottomNavItem("Search", R.drawable.search, {
+            SearchScreen(onMovieClick = { movie -> selectedSearchMovie = movie })
+        }),
         BottomNavItem("Favorite", R.drawable.favorite, { FavoriteScreen() }),
         BottomNavItem("Profile", R.drawable.profil, {
             ProfileScreen(
