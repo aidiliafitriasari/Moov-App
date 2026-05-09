@@ -1,6 +1,7 @@
 package com.moov.app.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -48,7 +49,7 @@ val dummyPopular = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen() {
+fun HomeScreen(onNavigateToDetail: (DummyMovie) -> Unit = {}) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -61,7 +62,6 @@ fun HomeScreen() {
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Foto Profil
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -96,7 +96,7 @@ fun HomeScreen() {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // ========== TRENDING NOW - 1 Poster + Indikator Titik ==========
+        // ========== TRENDING NOW ==========
         Text(
             text = "Trending Now",
             color = Color.White,
@@ -109,9 +109,8 @@ fun HomeScreen() {
         var trendingIndex by remember { mutableIntStateOf(0) }
         val scrollState = rememberScrollState()
 
-        // Sync index dengan scroll
         LaunchedEffect(scrollState.value) {
-            val itemWidth = 340 // lebar poster + padding
+            val itemWidth = 340
             trendingIndex = (scrollState.value / itemWidth).coerceIn(0, dummyTrending.size - 1)
         }
 
@@ -122,7 +121,7 @@ fun HomeScreen() {
                 dummyTrending.forEach { movie ->
                     Box(
                         modifier = Modifier
-                            .width(328.dp) // hampir full layar
+                            .width(328.dp)
                             .height(180.dp)
                             .padding(end = 12.dp)
                             .clip(RoundedCornerShape(12.dp))
@@ -130,10 +129,10 @@ fun HomeScreen() {
                                 Brush.verticalGradient(
                                     colors = listOf(movie.posterColor, movie.posterColor.copy(alpha = 0.6f))
                                 )
-                            ),
+                            )
+                            .clickable { onNavigateToDetail(movie) },
                         contentAlignment = Alignment.BottomStart
                     ) {
-                        // Overlay gelap
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -174,7 +173,6 @@ fun HomeScreen() {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Indikator Titik
             Row(horizontalArrangement = Arrangement.Center) {
                 dummyTrending.forEachIndexed { index, _ ->
                     Box(
@@ -228,7 +226,7 @@ fun HomeScreen() {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // ========== POPULAR THIS WEEK - 4 Kolom x 2 Baris ==========
+        // ========== POPULAR THIS WEEK ==========
         Text(
             text = "Popular This Week",
             color = Color.White,
@@ -238,17 +236,14 @@ fun HomeScreen() {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Filter film berdasarkan genre
         val filteredMovies = if (selectedGenre == "All") {
             dummyPopular
         } else {
             dummyPopular.filter { it.genre == selectedGenre }
         }
 
-        // Maksimal 8 film (2 baris x 4 kolom)
         val displayMovies = filteredMovies.take(8)
 
-        // Grid 4 kolom
         val columns = 4
         for (i in displayMovies.indices step columns) {
             Row(
@@ -272,7 +267,8 @@ fun HomeScreen() {
                                             displayMovies[index].posterColor.copy(alpha = 0.5f)
                                         )
                                     )
-                                ),
+                                )
+                                .clickable { onNavigateToDetail(displayMovies[index]) },
                             contentAlignment = Alignment.BottomStart
                         ) {
                             Column(modifier = Modifier.padding(6.dp)) {
@@ -297,14 +293,12 @@ fun HomeScreen() {
                             }
                         }
                     } else {
-                        // Placeholder kosong biar sejajar
                         Spacer(modifier = Modifier.weight(1f).padding(horizontal = 3.dp))
                     }
                 }
             }
         }
 
-        // Empty state
         if (displayMovies.isEmpty()) {
             Box(
                 modifier = Modifier

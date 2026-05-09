@@ -11,7 +11,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.moov.app.R
+import com.moov.app.ui.detail.DetailScreen
 import com.moov.app.ui.favorite.FavoriteScreen
+import com.moov.app.ui.home.DummyMovie
 import com.moov.app.ui.home.HomeScreen
 import com.moov.app.ui.profile.EditProfileScreen
 import com.moov.app.ui.profile.ProfileScreen
@@ -27,6 +29,15 @@ data class BottomNavItem(
 fun MainScreen(onLogout: () -> Unit = {}) {
     var selectedIndex by remember { mutableStateOf(0) }
     var showEditProfile by remember { mutableStateOf(false) }
+    var selectedMovie by remember { mutableStateOf<DummyMovie?>(null) }
+
+    if (selectedMovie != null) {
+        DetailScreen(
+            movie = selectedMovie!!,
+            onBack = { selectedMovie = null }
+        )
+        return
+    }
 
     if (showEditProfile) {
         EditProfileScreen(onNavigateBack = { showEditProfile = false })
@@ -34,7 +45,9 @@ fun MainScreen(onLogout: () -> Unit = {}) {
     }
 
     val navItems = listOf(
-        BottomNavItem("Home", R.drawable.home, { HomeScreen() }),
+        BottomNavItem("Home", R.drawable.home, {
+            HomeScreen(onNavigateToDetail = { selectedMovie = it })
+        }),
         BottomNavItem("Search", R.drawable.search, { SearchScreen() }),
         BottomNavItem("Favorite", R.drawable.favorite, { FavoriteScreen() }),
         BottomNavItem("Profile", R.drawable.profil, {
