@@ -1,5 +1,6 @@
 package com.moov.app.ui.auth
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -24,6 +26,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.moov.app.R
 
 @Composable
@@ -31,6 +34,9 @@ fun LoginScreen(onNavigateToRegister: () -> Unit, onLoginSuccess: () -> Unit = {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val authViewModel: AuthViewModel = viewModel()
 
     Box(
         modifier = Modifier
@@ -113,7 +119,16 @@ fun LoginScreen(onNavigateToRegister: () -> Unit, onLoginSuccess: () -> Unit = {
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = { onLoginSuccess() },
+                onClick = {
+                    authViewModel.login(email, password) { errorMessage ->
+                        if (errorMessage != null) {
+                            Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Login berhasil!", Toast.LENGTH_SHORT).show()
+                            onLoginSuccess()
+                        }
+                    }
+                },
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE50914))
