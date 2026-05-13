@@ -10,9 +10,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.moov.app.R
+import com.moov.app.data.remote.TmdbMovieDto
 import com.moov.app.ui.detail.DetailScreen
 import com.moov.app.ui.favorite.FavoriteScreen
-import com.moov.app.ui.home.DummyMovie
 import com.moov.app.ui.home.HomeScreen
 import com.moov.app.ui.profile.EditProfileScreen
 import com.moov.app.ui.profile.ProfileScreen
@@ -29,22 +29,12 @@ data class BottomNavItem(
 fun MainScreen(onLogout: () -> Unit = {}) {
     var selectedIndex by remember { mutableStateOf(0) }
     var showEditProfile by remember { mutableStateOf(false) }
-    var selectedMovie by remember { mutableStateOf<DummyMovie?>(null) }
+    var selectedMovie by remember { mutableStateOf<TmdbMovieDto?>(null) }
     var selectedSearchMovie by remember { mutableStateOf<DummySearchMovie?>(null) }
 
     // Navigasi ke Detail dari Search
     if (selectedSearchMovie != null) {
-        val movie = selectedSearchMovie!!
-        DetailScreen(
-            movie = DummyMovie(
-                title = movie.title,
-                genre = movie.genre,
-                rating = movie.rating,
-                posterColor = movie.posterColor
-            ),
-            onBack = { selectedSearchMovie = null }
-        )
-        return
+        selectedSearchMovie = null
     }
 
     // Navigasi ke Edit Profile
@@ -55,11 +45,7 @@ fun MainScreen(onLogout: () -> Unit = {}) {
 
     // Navigasi ke Detail dari Home
     if (selectedMovie != null) {
-        DetailScreen(
-            movie = selectedMovie!!,
-            onBack = { selectedMovie = null }
-        )
-        return
+        selectedMovie = null
     }
 
     val navItems = listOf(

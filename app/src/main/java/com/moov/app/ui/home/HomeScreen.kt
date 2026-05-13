@@ -19,44 +19,48 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-// Data dummy film
-data class DummyMovie(
-    val title: String,
-    val genre: String,
-    val rating: Double,
-    val posterColor: Color
-)
-
-val dummyTrending = listOf(
-    DummyMovie("Infinite War", "Action", 8.7, Color(0xFFE50914)),
-    DummyMovie("Transformers 4", "Action", 7.5, Color(0xFF1E90FF)),
-    DummyMovie("Komang", "Comedy", 8.2, Color(0xFFFFA500)),
-    DummyMovie("Azzamine", "Romance", 7.8, Color(0xFFFF69B4)),
-    DummyMovie("Maabilu", "Drama", 8.0, Color(0xFF32CD32))
-)
-
-val dummyPopular = listOf(
-    DummyMovie("Sekawan Limo", "Comedy", 8.0, Color(0xFF8A2BE2)),
-    DummyMovie("Janur Irong", "Horror", 7.3, Color(0xFF2F4F4F)),
-    DummyMovie("Jumbo", "Animation", 8.9, Color(0xFF4169E1)),
-    DummyMovie("Colony", "Sci-Fi", 7.6, Color(0xFF228B22)),
-    DummyMovie("Komang", "Comedy", 8.2, Color(0xFFFFA500)),
-    DummyMovie("Azzamine", "Romance", 7.8, Color(0xFFFF69B4)),
-    DummyMovie("Infinite War", "Action", 8.7, Color(0xFFE50914)),
-    DummyMovie("Maabilu", "Drama", 8.0, Color(0xFF32CD32))
-)
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.moov.app.data.remote.TmdbMovieDto
+import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onNavigateToDetail: (DummyMovie) -> Unit = {}) {
+fun HomeScreen(onNavigateToDetail: (TmdbMovieDto) -> Unit = {}) {
+    val viewModel: HomeViewModel = viewModel()
+    val trendingMovies = viewModel.trendingMovies.value
+    val nowPlayingMovies = viewModel.nowPlayingMovies.value
+    val popularMovies = viewModel.popularMovies.value
+    val isLoading = viewModel.isLoading.value
+    val errorMessage = viewModel.errorMessage.value
+
+    val auth = FirebaseAuth.getInstance()
+    val currentUser = auth.currentUser
+    val userName = currentUser?.displayName ?: "User"
+    val userInitial = if (userName != "User") userName.first().uppercaseChar().toString() else "U"
+
     Column(
+
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF0D0D0D))
             .padding(16.dp)
             .verticalScroll(rememberScrollState())
     ) {
+        if (isLoading) {
+            Box(Modifier.fillMaxWidth().height(400.dp), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color(0xFFE50914))
+            }
+            return@Column
+        }
+
+        if (errorMessage != null) {
+            Box(Modifier.fillMaxWidth().height(400.dp), contentAlignment = Alignment.Center) {
+                Text("Error: $errorMessage", color = Color.White)
+            }
+            return@Column
+        }
+
         // ========== HEADER: Foto Profil + Welcome ==========
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -70,7 +74,7 @@ fun HomeScreen(onNavigateToDetail: (DummyMovie) -> Unit = {}) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "A",
+                    text = userInitial,
                     color = Color.White,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
@@ -86,7 +90,7 @@ fun HomeScreen(onNavigateToDetail: (DummyMovie) -> Unit = {}) {
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "Aidilia Fitriasari",
+                    text = userName,
                     color = Color.White,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
@@ -111,28 +115,29 @@ fun HomeScreen(onNavigateToDetail: (DummyMovie) -> Unit = {}) {
 
         LaunchedEffect(scrollState.value) {
             val itemWidth = 340
-            trendingIndex = (scrollState.value / itemWidth).coerceIn(0, dummyTrending.size - 1)
+            trendingIndex = (scrollState.value / itemWidth).coerceIn(0, trendingMovies.size - 1)
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Row(
                 modifier = Modifier.horizontalScroll(scrollState)
             ) {
-                dummyTrending.forEach { movie ->
+                trendingMovies.forEach { movie ->
                     Box(
                         modifier = Modifier
                             .width(328.dp)
                             .height(180.dp)
                             .padding(end = 12.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(movie.posterColor, movie.posterColor.copy(alpha = 0.6f))
-                                )
-                            )
+                            .background(Color.DarkGray)
                             .clickable { onNavigateToDetail(movie) },
                         contentAlignment = Alignment.BottomStart
                     ) {
+                        AsyncImage(
+                            model = "https://image.tmdb.org/t/p/w500${movie.poster_path}",
+                            contentDescription = movie.title,
+                            modifier = Modifier.fillMaxSize()
+                        )
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -140,7 +145,10 @@ fun HomeScreen(onNavigateToDetail: (DummyMovie) -> Unit = {}) {
                                 .align(Alignment.BottomCenter)
                                 .background(
                                     Brush.verticalGradient(
-                                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))
+                                        colors = listOf(
+                                            Color.Transparent,
+                                            Color.Black.copy(alpha = 0.8f)
+                                        )
                                     )
                                 )
                         )
@@ -155,13 +163,13 @@ fun HomeScreen(onNavigateToDetail: (DummyMovie) -> Unit = {}) {
                             )
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "⭐ ${movie.rating}",
+                                    text = "⭐ ${movie.vote_average}",
                                     color = Color(0xFFFFD700),
                                     fontSize = 14.sp
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = movie.genre,
+                                    text = movie.genre_ids.firstOrNull()?.toString() ?: "",
                                     color = Color(0xFFB3B3B3),
                                     fontSize = 12.sp
                                 )
@@ -174,146 +182,143 @@ fun HomeScreen(onNavigateToDetail: (DummyMovie) -> Unit = {}) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(horizontalArrangement = Arrangement.Center) {
-                dummyTrending.forEachIndexed { index, _ ->
+                trendingMovies.forEachIndexed { index, _ ->
                     Box(
                         modifier = Modifier
                             .padding(horizontal = 4.dp)
                             .size(if (index == trendingIndex) 10.dp else 6.dp)
                             .clip(CircleShape)
                             .background(
-                                if (index == trendingIndex) Color(0xFFE50914) else Color(0xFF757575)
+                                if (index == trendingIndex) Color(0xFFE50914) else Color(
+                                    0xFF757575
+                                )
                             )
                     )
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-        // ========== GENRE CHIPS ==========
-        Text(
-            text = "Genre",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold
-        )
+            // ========== GENRE CHIPS ==========
+            Text(
+                text = "Genre",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-        val genres = listOf("All", "Action", "Comedy", "Romance", "Horror")
-        var selectedGenre by remember { mutableStateOf("All") }
+            val genres = listOf("All", "Action", "Comedy", "Romance", "Horror")
+            var selectedGenre by remember { mutableStateOf("All") }
 
-        Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-            genres.forEach { genre ->
-                FilterChip(
-                    selected = selectedGenre == genre,
-                    onClick = { selectedGenre = genre },
-                    label = {
-                        Text(
-                            text = genre,
-                            color = if (selectedGenre == genre) Color.White else Color(0xFFB3B3B3)
-                        )
-                    },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFFE50914),
-                        containerColor = Color(0xFF1A1A1A)
-                    ),
-                    modifier = Modifier.padding(end = 8.dp),
-                    shape = RoundedCornerShape(16.dp)
-                )
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                genres.forEach { genre ->
+                    FilterChip(
+                        selected = selectedGenre == genre,
+                        onClick = { selectedGenre = genre },
+                        label = {
+                            Text(
+                                text = genre,
+                                color = if (selectedGenre == genre) Color.White else Color(
+                                    0xFFB3B3B3
+                                )
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFFE50914),
+                            containerColor = Color(0xFF1A1A1A)
+                        ),
+                        modifier = Modifier.padding(end = 8.dp),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                }
             }
-        }
 
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-        // ========== POPULAR THIS WEEK ==========
-        Text(
-            text = "Popular This Week",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold
-        )
+            // ========== POPULAR THIS WEEK ==========
+            Text(
+                text = "Popular This Week",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-        val filteredMovies = if (selectedGenre == "All") {
-            dummyPopular
-        } else {
-            dummyPopular.filter { it.genre == selectedGenre }
-        }
+            val displayMovies = popularMovies.take(8)
 
-        val displayMovies = filteredMovies.take(8)
-
-        val columns = 4
-        for (i in displayMovies.indices step columns) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp)
-            ) {
-                for (j in 0 until columns) {
-                    val index = i + j
-                    if (index < displayMovies.size) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(horizontal = 3.dp)
-                                .height(150.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(
-                                    Brush.verticalGradient(
-                                        colors = listOf(
-                                            displayMovies[index].posterColor,
-                                            displayMovies[index].posterColor.copy(alpha = 0.5f)
-                                        )
+            val columns = 4
+            for (i in displayMovies.indices step columns) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                ) {
+                    for (j in 0 until columns) {
+                        val index = i + j
+                        if (index < displayMovies.size) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(horizontal = 3.dp)
+                                    .height(150.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color.DarkGray)
+                                    .clickable { onNavigateToDetail(displayMovies[index]) },
+                                contentAlignment = Alignment.BottomStart
+                            ) {
+                                AsyncImage(
+                                    model = "https://image.tmdb.org/t/p/w500${displayMovies[index].poster_path}",
+                                    contentDescription = displayMovies[index].title,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                                Column(modifier = Modifier.padding(6.dp)) {
+                                    Text(
+                                        text = displayMovies[index].title,
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
-                                )
-                                .clickable { onNavigateToDetail(displayMovies[index]) },
-                            contentAlignment = Alignment.BottomStart
-                        ) {
-                            Column(modifier = Modifier.padding(6.dp)) {
-                                Text(
-                                    text = displayMovies[index].title,
-                                    color = Color.White,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    text = displayMovies[index].genre,
-                                    color = Color(0xFFB3B3B3),
-                                    fontSize = 8.sp
-                                )
-                                Text(
-                                    text = "⭐ ${displayMovies[index].rating}",
-                                    color = Color(0xFFFFD700),
-                                    fontSize = 9.sp
-                                )
+                                    Text(
+                                        text = displayMovies[index].genre_ids.firstOrNull()
+                                            ?.toString() ?: "",
+                                        color = Color(0xFFB3B3B3),
+                                        fontSize = 8.sp
+                                    )
+                                    Text(
+                                        text = "⭐ ${displayMovies[index].vote_average}",
+                                        color = Color(0xFFFFD700),
+                                        fontSize = 9.sp
+                                    )
+                                }
                             }
+                        } else {
+                            Spacer(modifier = Modifier.weight(1f).padding(horizontal = 3.dp))
                         }
-                    } else {
-                        Spacer(modifier = Modifier.weight(1f).padding(horizontal = 3.dp))
                     }
                 }
             }
-        }
 
-        if (displayMovies.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "No movies in this genre",
-                    color = Color(0xFF757575),
-                    fontSize = 14.sp
-                )
+            if (displayMovies.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No movies in this genre",
+                        color = Color(0xFF757575),
+                        fontSize = 14.sp
+                    )
+                }
             }
-        }
 
-        Spacer(modifier = Modifier.height(80.dp))
+            Spacer(modifier = Modifier.height(80.dp))
+        }
     }
 }
