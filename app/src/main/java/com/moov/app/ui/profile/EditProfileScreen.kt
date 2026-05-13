@@ -20,12 +20,19 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(onNavigateBack: () -> Unit = {}) {
-    var fullName by remember { mutableStateOf("Aidilia Fitriasari") }
-    var email by remember { mutableStateOf("aidilia811@gmail.com") }
+    val auth = FirebaseAuth.getInstance()
+    val currentUser = auth.currentUser
+    val initialName = currentUser?.displayName ?: "Aidilia Fitriasari"
+    val initialEmail = currentUser?.email ?: "aidilia811@gmail.com"
+    val userInitial = if (initialName != "Aidilia Fitriasari") initialName.first().uppercaseChar().toString() else "A"
+
+    var fullName by remember { mutableStateOf(initialName) }
+    var email by remember { mutableStateOf(initialEmail) }
 
     Column(
         modifier = Modifier
@@ -85,7 +92,7 @@ fun EditProfileScreen(onNavigateBack: () -> Unit = {}) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "A",
+                text = userInitial,
                 color = Color.White,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold
@@ -105,7 +112,7 @@ fun EditProfileScreen(onNavigateBack: () -> Unit = {}) {
 
         // ========== NAMA (TENGAH) ==========
         Text(
-            text = "Aidilia Fitriasari",
+            text = initialName,
             color = Color.White,
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold
@@ -115,7 +122,7 @@ fun EditProfileScreen(onNavigateBack: () -> Unit = {}) {
 
         // ========== EMAIL (TENGAH) ==========
         Text(
-            text = "aidiliafitria811@gmail.com",
+            text = initialEmail,
             color = Color(0xFFB3B3B3),
             fontSize = 14.sp
         )

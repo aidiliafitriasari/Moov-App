@@ -177,7 +177,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit = {}) {
 
             Button(
                 onClick = {
-                    authViewModel.register(email, password) { errorMessage ->
+                    authViewModel.register(fullName, email, password) { errorMessage ->
                         if (errorMessage != null) {
                             Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
                         } else {

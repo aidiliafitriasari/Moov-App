@@ -18,9 +18,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun ProfileScreen(onNavigateToEdit: () -> Unit = {}, onLogout: () -> Unit = {}) {
+    val auth = FirebaseAuth.getInstance()
+    val currentUser = auth.currentUser
+    val userName = currentUser?.displayName ?: "User"
+    val userEmail = currentUser?.email ?: "No Email"
+    val userInitial = if (userName != "User") userName.first().uppercaseChar().toString() else "U"
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -71,7 +78,7 @@ fun ProfileScreen(onNavigateToEdit: () -> Unit = {}, onLogout: () -> Unit = {}) 
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "A",
+                text = userInitial,
                 color = Color.White,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Bold
@@ -82,7 +89,7 @@ fun ProfileScreen(onNavigateToEdit: () -> Unit = {}, onLogout: () -> Unit = {}) 
 
         // ========== NAMA (TENGAH) ==========
         Text(
-            text = "Aidilia Fitriasari",
+            text = userName,
             color = Color.White,
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold
@@ -92,7 +99,7 @@ fun ProfileScreen(onNavigateToEdit: () -> Unit = {}, onLogout: () -> Unit = {}) 
 
         // ========== EMAIL (TENGAH) ==========
         Text(
-            text = "aidiliafitria811@gmail.com",
+            text = userEmail,
             color = Color(0xFFB3B3B3),
             fontSize = 14.sp
         )
@@ -111,12 +118,12 @@ fun ProfileScreen(onNavigateToEdit: () -> Unit = {}, onLogout: () -> Unit = {}) 
         Spacer(modifier = Modifier.height(16.dp))
 
         // Full Name
-        ProfileInfoItem(label = "Full Name", value = "Aidilia Fitriasari")
+        ProfileInfoItem(label = "Full Name", value = userName)
 
         HorizontalDivider(color = Color(0xFF2E2E2E), thickness = 1.dp)
 
         // Email
-        ProfileInfoItem(label = "Email", value = "aidilia811@gmail.com")
+        ProfileInfoItem(label = "Email", value = userEmail)
 
         Spacer(modifier = Modifier.height(40.dp))
 

@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.*
+import com.google.firebase.auth.FirebaseAuth
 import com.moov.app.ui.MainScreen
 import com.moov.app.ui.auth.LoginScreen
 import com.moov.app.ui.auth.RegisterScreen
@@ -25,7 +26,10 @@ class MainActivity : ComponentActivity() {
                     onNavigateToLogin = { currentScreen = "login" }
                 )
                 "main" -> MainScreen(
-                    onLogout = { currentScreen = "login" }
+                    onLogout = {
+                        FirebaseAuth.getInstance().signOut()
+                        currentScreen = "login"
+                    }
                 )
             }
         }

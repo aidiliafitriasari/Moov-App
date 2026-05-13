@@ -7,11 +7,18 @@ class AuthViewModel : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
 
     // ========== REGISTER ==========
-    fun register(email: String, password: String, onResult: (String?) -> Unit) {
+    fun register(name: String, email: String, password: String, onResult: (String?) -> Unit) {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    onResult(null) // Sukses
+                    val user = auth.currentUser
+                    user?.let {
+                        val profile = com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                            .setDisplayName(name)
+                            .build()
+                        it.updateProfile(profile)
+                    }
+                    onResult(null)
                 } else {
                     onResult(task.exception?.message) // Gagal
                 }
