@@ -16,6 +16,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.text.style.TextOverflow
 
 @Composable
 fun RatingDialog(
@@ -54,7 +55,9 @@ fun RatingDialog(
                             Icon(
                                 imageVector = Icons.Filled.Star,
                                 contentDescription = "Star $i",
-                                tint = if (i <= selectedRating) Color(0xFFF5C518) else Color(0xFF2E2E2E),
+                                tint = if (i <= selectedRating) Color(0xFFF5C518) else Color(
+                                    0xFF2E2E2E
+                                ),
                                 modifier = Modifier.size(40.dp)
                             )
                         }
@@ -95,31 +98,41 @@ fun RatingDialog(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Buttons
+                // Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedButton(
                         onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp),
                         shape = RoundedCornerShape(8.dp),
                         border = ButtonDefaults.outlinedButtonBorder.copy(
                             brush = androidx.compose.ui.graphics.SolidColor(Color(0xFF2E2E2E))
                         ),
                         colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.Transparent)
                     ) {
-                        Text("Batal", color = Color(0xFFB3B3B3))
+                        Text("Batal", color = Color(0xFFB3B3B3), fontSize = 14.sp)
                     }
-
-                    Spacer(modifier = Modifier.width(12.dp))
 
                     Button(
                         onClick = { onSubmit(selectedRating, comment) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE50914))
                     ) {
-                        Text("Kirim Ulasan", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            "Kirim",
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }

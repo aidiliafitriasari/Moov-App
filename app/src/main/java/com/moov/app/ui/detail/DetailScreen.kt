@@ -23,7 +23,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.moov.app.domain.model.Review
 import com.moov.app.ui.components.RatingDialog
 import com.moov.app.data.remote.TmdbMovieDto
 import coil.compose.AsyncImage
@@ -32,30 +31,29 @@ import com.moov.app.data.local.MovieDatabase
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
+import com.moov.app.data.local.ReviewEntity
+import android.content.Intent
+import android.net.Uri
+import com.moov.app.data.repository.MovieRepository
+import androidx.compose.material.icons.filled.ThumbUp
 
 @Composable
 fun DetailScreen(movie: TmdbMovieDto, onBack: () -> Unit) {
-    val dummyReviews = listOf(
-        Review(
-            id = 1, userName = "Marselino", rating = 5,
-            comment = "Sumpah gila bagus bangett bener bener alurnya ga bisa ketebak, mana ditambah ada horror nya, actionnya top",
-            likeCount = 5, timeAgo = "10 menit yang lalu"
-        ),
-        Review(
-            id = 2, userName = "Rehania", rating = 5,
-            comment = "ANGGA SHENNA BENER BENER TOP MARKOTOP ACTINGNYA GA PERNAH GAGAL",
-            likeCount = 10, timeAgo = "1 jam yang lalu"
-        )
-    )
-
-    var isFavorite by remember { mutableStateOf(false) }
-    var showRatingDialog by remember { mutableStateOf(false) }
-    var reviews by remember { mutableStateOf(dummyReviews) }
-    var userGivenRating by remember { mutableStateOf(0) }
+    var reviews by remember { mutableStateOf<List<ReviewEntity>>(emptyList()) }
     val context = LocalContext.current
     val db = remember { MovieDatabase.getDatabase(context) }
     val dao = remember { db.favoriteMovieDao() }
     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+
+// Ambil reviews dari Room DB
+    LaunchedEffect(movie.id) {
+        reviews = db.reviewDao().getReviewsByMovie(movie.id)
+    }
+
+    var isFavorite by remember { mutableStateOf(false) }
+    var showRatingDialog by remember { mutableStateOf(false) }
+    var userGivenRating by remember { mutableStateOf(0) }
+
 
     // Cek apakah film ini udah ada di favorit
     LaunchedEffect(movie.id) {
@@ -66,14 +64,20 @@ fun DetailScreen(movie: TmdbMovieDto, onBack: () -> Unit) {
         RatingDialog(
             onDismiss = { showRatingDialog = false },
             onSubmit = { rating, comment ->
-                reviews = reviews + Review(
-                    id = reviews.size + 1,
-                    userName = "You",
-                    rating = rating,
-                    comment = comment,
-                    likeCount = 0,
-                    timeAgo = "Baru saja"
-                )
+                kotlinx.coroutines.MainScope().launch {
+                    db.reviewDao().insertReview(
+                        ReviewEntity(
+                            movieId = movie.id,
+                            userId = userId,
+                            userName = FirebaseAuth.getInstance().currentUser?.displayName ?: "User",
+                            rating = rating,
+                            comment = comment,
+                            likeCount = 0,
+                            timeAgo = "Baru saja"
+                        )
+                    )
+                    reviews = db.reviewDao().getReviewsByMovie(movie.id)
+                }
                 userGivenRating = rating
                 showRatingDialog = false
             }
@@ -289,7 +293,19 @@ fun DetailScreen(movie: TmdbMovieDto, onBack: () -> Unit) {
                 }
 
                 OutlinedButton(
-                    onClick = { },
+                    onClick = {
+                        kotlinx.coroutines.MainScope().launch {
+                            val repo = MovieRepository()
+                            val trailerKey = repo.getMovieTrailerKey(movie.id)
+                            if (trailerKey != null) {
+                                val intent = Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://www.youtube.com/watch?v=$trailerKey")
+                                )
+                                context.startActivity(intent)
+                            }
+                        }
+                    },
                     modifier = Modifier.weight(1f).height(44.dp),
                     shape = RoundedCornerShape(8.dp),
                     border = ButtonDefaults.outlinedButtonBorder.copy(
@@ -378,7 +394,7 @@ fun DetailScreen(movie: TmdbMovieDto, onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(12.dp))
 
             reviews.forEach { review ->
-                ReviewCard(review = review)
+                ReviewCard(review = review, db = db)
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -387,7 +403,7 @@ fun DetailScreen(movie: TmdbMovieDto, onBack: () -> Unit) {
 }
 
 @Composable
-fun ReviewCard(review: Review) {
+fun ReviewCard(review: ReviewEntity, db: MovieDatabase) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -439,11 +455,35 @@ fun ReviewCard(review: Review) {
                     lineHeight = 20.sp
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    "👏 ${review.likeCount}",
-                    color = Color(0xFF757575),
-                    fontSize = 12.sp
-                )
+                var liked by remember { mutableStateOf(false) }
+                var likeCount by remember { mutableStateOf(review.likeCount) }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable {
+                        if (!liked) {
+                            liked = true
+                            likeCount++
+                            // Update like di Room DB
+                            kotlinx.coroutines.MainScope().launch {
+                                db.reviewDao().likeReview(review.id)
+                            }
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.ThumbUp,
+                        contentDescription = "Like",
+                        tint = if (liked) Color(0xFFE50914) else Color(0xFF757575),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "$likeCount",
+                        color = if (liked) Color(0xFFE50914) else Color(0xFF757575),
+                        fontSize = 12.sp
+                    )
+                }
             }
         }
     }

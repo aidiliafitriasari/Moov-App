@@ -18,4 +18,19 @@ class MovieRepository {
     suspend fun getPopularMovies(): TmdbMovieResponse {
         return apiService.getPopularMovies(apiKey)
     }
+
+    // Tambahan untuk Trailer
+    suspend fun getMovieTrailerKey(movieId: Int): String? {
+        return try {
+            val response = RetrofitClient.apiService.getMovieVideos(
+                movieId = movieId,
+                apiKey = apiKey
+            )
+            // Cari trailer resmi dari YouTube, jika tidak ada ambil video YouTube pertama
+            response.results.firstOrNull { it.type == "Trailer" && it.site == "YouTube" }?.key
+                ?: response.results.firstOrNull { it.site == "YouTube" }?.key
+        } catch (e: Exception) {
+            null
+        }
+    }
 }

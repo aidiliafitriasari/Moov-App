@@ -14,3 +14,14 @@ data class TmdbMovieDto(
     val genre_ids: List<Int>,
     val release_date: String?
 )
+
+data class TmdbVideoResponse(
+    val results: List<TmdbVideoDto>
+)
+
+data class TmdbVideoDto(
+    val key: String?,
+    val name: String?,
+    val site: String?,
+    val type: String?
+)
