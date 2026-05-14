@@ -19,6 +19,7 @@ import com.moov.app.ui.profile.ProfileScreen
 import com.moov.app.ui.search.DummySearchMovie
 import com.moov.app.ui.search.SearchScreen
 
+
 data class BottomNavItem(
     val label: String,
     val iconResId: Int,
@@ -45,7 +46,11 @@ fun MainScreen(onLogout: () -> Unit = {}) {
 
     // Navigasi ke Detail dari Home
     if (selectedMovie != null) {
-        selectedMovie = null
+        DetailScreen(
+            movie = selectedMovie!!,
+            onBack = { selectedMovie = null }
+        )
+        return
     }
 
     val navItems = listOf(

@@ -19,17 +19,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.moov.app.domain.model.Review
 import com.moov.app.ui.components.RatingDialog
-import com.moov.app.ui.home.DummyMovie
+import com.moov.app.data.remote.TmdbMovieDto
+import coil.compose.AsyncImage
 
 @Composable
-fun DetailScreen(movie: DummyMovie, onBack: () -> Unit) {
+fun DetailScreen(movie: TmdbMovieDto, onBack: () -> Unit) {
     val dummyReviews = listOf(
         Review(
             id = 1, userName = "Marselino", rating = 5,
@@ -81,12 +81,14 @@ fun DetailScreen(movie: DummyMovie, onBack: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(250.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(movie.posterColor, Color(0xFF0D0D0D))
-                        )
-                    )
+                    .background(Color.DarkGray)
             ) {
+                AsyncImage(
+                    model = "https://image.tmdb.org/t/p/w500${movie.backdrop_path}",
+                    contentDescription = movie.title,
+                    modifier = Modifier.fillMaxSize()
+                )
+
                 IconButton(
                     onClick = onBack,
                     modifier = Modifier
@@ -103,10 +105,14 @@ fun DetailScreen(movie: DummyMovie, onBack: () -> Unit) {
                         .offset(y = 40.dp)
                         .size(100.dp, 150.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(movie.posterColor.copy(alpha = 0.8f)),
+                        .background(Color.DarkGray),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("🎬", fontSize = 40.sp)
+                    AsyncImage(
+                        model = "https://image.tmdb.org/t/p/w500${movie.poster_path}",
+                        contentDescription = movie.title,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             }
 
@@ -128,7 +134,7 @@ fun DetailScreen(movie: DummyMovie, onBack: () -> Unit) {
                         color = Color.White
                     )
                     Text(
-                        text = "Kaya dadakan?",
+                        text = movie.overview.take(50) + "...",
                         fontSize = 14.sp,
                         color = Color(0xFFB3B3B3)
                     )
@@ -154,12 +160,20 @@ fun DetailScreen(movie: DummyMovie, onBack: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Star, null, tint = Color(0xFFF5C518), modifier = Modifier.size(20.dp))
+                    Icon(
+                        Icons.Filled.Star,
+                        null,
+                        tint = Color(0xFFF5C518),
+                        modifier = Modifier.size(20.dp)
+                    )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("${movie.rating}/10", color = Color.White, fontSize = 16.sp)
+                    Text("${movie.vote_average}/10", color = Color.White, fontSize = 16.sp)
                 }
-                Text("152 min", color = Color(0xFFB3B3B3), fontSize = 14.sp)
-                Text("2025", color = Color(0xFFB3B3B3), fontSize = 14.sp)
+                Text(
+                    movie.release_date?.take(4) ?: "N/A",
+                    color = Color(0xFFB3B3B3),
+                    fontSize = 14.sp
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -172,9 +186,9 @@ fun DetailScreen(movie: DummyMovie, onBack: () -> Unit) {
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                listOf("Action", "Crime", "Drama").forEach { genre ->
+                movie.genre_ids?.take(3)?.forEach { genreId ->
                     Text(
-                        text = genre,
+                        text = genreId.toString(),
                         color = Color(0xFFB3B3B3),
                         fontSize = 14.sp,
                         modifier = Modifier
@@ -251,7 +265,7 @@ fun DetailScreen(movie: DummyMovie, onBack: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                "How am I supposed to tell ya? I don't wanna see you with anyone but me Nobody gets me like you How am I supposed to let you go? Only like myself when I'm with you Nobody gets me, you do (do) You do",
+                text = movie.overview,
                 fontSize = 14.sp,
                 color = Color(0xFFB3B3B3),
                 lineHeight = 22.sp,
@@ -318,44 +332,58 @@ fun ReviewCard(review: Review) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A))
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFE50914)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(review.userName.first().toString(), color = Color.White, fontWeight = FontWeight.Bold)
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A))
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFE50914)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            review.userName.first().toString(),
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            review.userName,
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(review.timeAgo, color = Color(0xFF757575), fontSize = 12.sp)
+                    }
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Column {
-                    Text(review.userName, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                    Text(review.timeAgo, color = Color(0xFF757575), fontSize = 12.sp)
+                Spacer(modifier = Modifier.height(6.dp))
+                Row {
+                    for (i in 1..5) {
+                        Icon(
+                            Icons.Filled.Star, null,
+                            tint = if (i <= review.rating) Color(0xFFF5C518) else Color(0xFF2E2E2E),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    review.comment,
+                    color = Color(0xFFB3B3B3),
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "👏 ${review.likeCount}",
+                    color = Color(0xFF757575),
+                    fontSize = 12.sp
+                )
             }
-            Spacer(modifier = Modifier.height(6.dp))
-            Row {
-                for (i in 1..5) {
-                    Icon(
-                        Icons.Filled.Star, null,
-                        tint = if (i <= review.rating) Color(0xFFF5C518) else Color(0xFF2E2E2E),
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(review.comment, color = Color(0xFFB3B3B3), fontSize = 14.sp, lineHeight = 20.sp)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                "👏 ${review.likeCount}",
-                color = Color(0xFF757575),
-                fontSize = 12.sp
-            )
         }
     }
-}
