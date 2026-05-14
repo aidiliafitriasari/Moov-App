@@ -27,6 +27,11 @@ import com.moov.app.domain.model.Review
 import com.moov.app.ui.components.RatingDialog
 import com.moov.app.data.remote.TmdbMovieDto
 import coil.compose.AsyncImage
+import com.moov.app.data.local.FavoriteMovieEntity
+import com.moov.app.data.local.MovieDatabase
+import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
 
 @Composable
 fun DetailScreen(movie: TmdbMovieDto, onBack: () -> Unit) {
@@ -47,6 +52,15 @@ fun DetailScreen(movie: TmdbMovieDto, onBack: () -> Unit) {
     var showRatingDialog by remember { mutableStateOf(false) }
     var reviews by remember { mutableStateOf(dummyReviews) }
     var userGivenRating by remember { mutableStateOf(0) }
+    val context = LocalContext.current
+    val db = remember { MovieDatabase.getDatabase(context) }
+    val dao = remember { db.favoriteMovieDao() }
+    val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+
+    // Cek apakah film ini udah ada di favorit
+    LaunchedEffect(movie.id) {
+        isFavorite = dao.isFavorite(movie.id, userId) != null
+    }
 
     if (showRatingDialog) {
         RatingDialog(
@@ -139,7 +153,31 @@ fun DetailScreen(movie: TmdbMovieDto, onBack: () -> Unit) {
                         color = Color(0xFFB3B3B3)
                     )
                 }
-                IconButton(onClick = { isFavorite = !isFavorite }) {
+                IconButton(onClick = {
+                    kotlinx.coroutines.MainScope().launch {
+                        if (isFavorite) {
+                            // Hapus dari favorit
+                            dao.isFavorite(movie.id, userId)?.let { dao.deleteFavorite(it) }
+                            isFavorite = false
+                        } else {
+                            // Tambah ke favorit
+                            dao.insertFavorite(
+                                FavoriteMovieEntity(
+                                    id = movie.id,
+                                    title = movie.title,
+                                    overview = movie.overview,
+                                    posterPath = movie.poster_path,
+                                    backdropPath = movie.backdrop_path,
+                                    voteAverage = movie.vote_average,
+                                    releaseDate = movie.release_date,
+                                    genreIds = movie.genre_ids?.joinToString(",") ?: "",
+                                    userId = userId
+                                )
+                            )
+                            isFavorite = true
+                        }
+                    }
+                }) {
                     Icon(
                         if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                         "Favorite",
@@ -208,7 +246,29 @@ fun DetailScreen(movie: TmdbMovieDto, onBack: () -> Unit) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Button(
-                    onClick = { isFavorite = !isFavorite },
+                    onClick = {
+                        kotlinx.coroutines.MainScope().launch {
+                            if (isFavorite) {
+                                dao.isFavorite(movie.id, userId)?.let { dao.deleteFavorite(it) }
+                                isFavorite = false
+                            } else {
+                                dao.insertFavorite(
+                                    FavoriteMovieEntity(
+                                        id = movie.id,
+                                        title = movie.title,
+                                        overview = movie.overview,
+                                        posterPath = movie.poster_path,
+                                        backdropPath = movie.backdrop_path,
+                                        voteAverage = movie.vote_average,
+                                        releaseDate = movie.release_date,
+                                        genreIds = movie.genre_ids?.joinToString(",") ?: "",
+                                        userId = userId
+                                    )
+                                )
+                                isFavorite = true
+                            }
+                        }
+                    },
                     modifier = Modifier.weight(1f).height(44.dp),
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE50914))
