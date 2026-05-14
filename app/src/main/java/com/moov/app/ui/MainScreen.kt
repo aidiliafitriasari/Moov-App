@@ -18,6 +18,9 @@ import com.moov.app.ui.profile.EditProfileScreen
 import com.moov.app.ui.profile.ProfileScreen
 import com.moov.app.ui.search.DummySearchMovie
 import com.moov.app.ui.search.SearchScreen
+import com.moov.app.ui.favorite.FavoriteScreen
+import com.moov.app.ui.detail.DetailScreen
+import com.moov.app.data.local.FavoriteMovieEntity
 
 
 data class BottomNavItem(
@@ -32,10 +35,20 @@ fun MainScreen(onLogout: () -> Unit = {}) {
     var showEditProfile by remember { mutableStateOf(false) }
     var selectedMovie by remember { mutableStateOf<TmdbMovieDto?>(null) }
     var selectedSearchMovie by remember { mutableStateOf<DummySearchMovie?>(null) }
+    var selectedFavoriteMovie by remember { mutableStateOf<TmdbMovieDto?>(null) }
 
     // Navigasi ke Detail dari Search
     if (selectedSearchMovie != null) {
         selectedSearchMovie = null
+    }
+
+    // Navigasi ke Detail dari Favorite
+    if (selectedFavoriteMovie != null) {
+        DetailScreen(
+            movie = selectedFavoriteMovie!!,
+            onBack = { selectedFavoriteMovie = null }
+        )
+        return
     }
 
     // Navigasi ke Edit Profile
@@ -60,7 +73,20 @@ fun MainScreen(onLogout: () -> Unit = {}) {
         BottomNavItem("Search", R.drawable.search, {
             SearchScreen(onMovieClick = { movie -> selectedSearchMovie = movie })
         }),
-        BottomNavItem("Favorite", R.drawable.favorite, { FavoriteScreen() }),
+        BottomNavItem("Favorite", R.drawable.favorite, {
+            FavoriteScreen(onMovieClick = { movieEntity ->
+                selectedFavoriteMovie = TmdbMovieDto(
+                    id = movieEntity.id,
+                    title = movieEntity.title,
+                    overview = movieEntity.overview,
+                    poster_path = movieEntity.posterPath,
+                    backdrop_path = movieEntity.backdropPath,
+                    vote_average = movieEntity.voteAverage,
+                    genre_ids = movieEntity.genreIds.split(",").mapNotNull { it.trim().toIntOrNull() },
+                    release_date = movieEntity.releaseDate
+                )
+            })
+        }),
         BottomNavItem("Profile", R.drawable.profil, {
             ProfileScreen(
                 onNavigateToEdit = { showEditProfile = true },

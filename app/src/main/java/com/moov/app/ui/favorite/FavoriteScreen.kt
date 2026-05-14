@@ -24,10 +24,11 @@ import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
-
+import com.moov.app.utils.GenreMapper
+import androidx.compose.foundation.clickable
 
 @Composable
-fun FavoriteScreen() {
+fun FavoriteScreen(onMovieClick: (FavoriteMovieEntity) -> Unit = {}) {
     val context = LocalContext.current
     val db = remember { MovieDatabase.getDatabase(context) }
     val dao = remember { db.favoriteMovieDao() }
@@ -78,12 +79,12 @@ fun FavoriteScreen() {
                     FavoriteCard(
                         movie = movie,
                         onDelete = {
-                            // Hapus dari Room DB
                             kotlinx.coroutines.MainScope().launch {
                                 dao.deleteFavorite(movie)
                                 favorites = dao.getFavoritesByUser(userId)
                             }
                         },
+                        onClick = { onMovieClick(movie) },
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -99,9 +100,9 @@ fun FavoriteScreen() {
 }
 
 @Composable
-fun FavoriteCard(movie: FavoriteMovieEntity, onDelete: () -> Unit, modifier: Modifier = Modifier) {
+fun FavoriteCard(movie: FavoriteMovieEntity, onDelete: () -> Unit, onClick: () -> Unit = {}, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier,
+        modifier = modifier.clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A))
     ) {
@@ -111,8 +112,7 @@ fun FavoriteCard(movie: FavoriteMovieEntity, onDelete: () -> Unit, modifier: Mod
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
-                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
-                    .background(Color.DarkGray),
+                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
                 contentAlignment = Alignment.Center
 
             ) {
@@ -164,7 +164,7 @@ fun FavoriteCard(movie: FavoriteMovieEntity, onDelete: () -> Unit, modifier: Mod
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "${movie.voteAverage}",
+                        text = "${"%.1f".format(movie.voteAverage)}",
                         color = Color.White,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold
@@ -175,7 +175,9 @@ fun FavoriteCard(movie: FavoriteMovieEntity, onDelete: () -> Unit, modifier: Mod
 
                 // Genre
                 Text(
-                    text = movie.genreIds,
+                    text = GenreMapper.getGenreNames(
+                        movie.genreIds.split(",").mapNotNull { it.trim().toIntOrNull() }
+                    ),
                     color = Color(0xFF757575),
                     fontSize = 12.sp,
                     maxLines = 1,

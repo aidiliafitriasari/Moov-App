@@ -36,6 +36,7 @@ import android.content.Intent
 import android.net.Uri
 import com.moov.app.data.repository.MovieRepository
 import androidx.compose.material.icons.filled.ThumbUp
+import com.moov.app.utils.GenreMapper
 
 @Composable
 fun DetailScreen(movie: TmdbMovieDto, onBack: () -> Unit) {
@@ -99,7 +100,6 @@ fun DetailScreen(movie: TmdbMovieDto, onBack: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(250.dp)
-                    .background(Color.DarkGray)
             ) {
                 AsyncImage(
                     model = "https://image.tmdb.org/t/p/w500${movie.backdrop_path}",
@@ -209,7 +209,7 @@ fun DetailScreen(movie: TmdbMovieDto, onBack: () -> Unit) {
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("${movie.vote_average}/10", color = Color.White, fontSize = 16.sp)
+                    Text("${"%.1f".format(movie.vote_average)}/10", color = Color.White, fontSize = 16.sp)
                 }
                 Text(
                     movie.release_date?.take(4) ?: "N/A",
@@ -230,7 +230,7 @@ fun DetailScreen(movie: TmdbMovieDto, onBack: () -> Unit) {
             ) {
                 movie.genre_ids?.take(3)?.forEach { genreId ->
                     Text(
-                        text = genreId.toString(),
+                        text = GenreMapper.getGenreName(genreId),
                         color = Color(0xFFB3B3B3),
                         fontSize = 14.sp,
                         modifier = Modifier
