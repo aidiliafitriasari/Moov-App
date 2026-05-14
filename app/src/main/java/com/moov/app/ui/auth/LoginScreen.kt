@@ -120,6 +120,11 @@ fun LoginScreen(onNavigateToRegister: () -> Unit, onLoginSuccess: () -> Unit = {
 
             Button(
                 onClick = {
+                    // Validasi input kosong
+                    if (email.isBlank() || password.isBlank()) {
+                        Toast.makeText(context, "Email dan Password harus diisi!", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
                     authViewModel.login(email, password) { errorMessage ->
                         if (errorMessage != null) {
                             Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()

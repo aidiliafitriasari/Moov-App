@@ -16,12 +16,7 @@ import com.moov.app.ui.favorite.FavoriteScreen
 import com.moov.app.ui.home.HomeScreen
 import com.moov.app.ui.profile.EditProfileScreen
 import com.moov.app.ui.profile.ProfileScreen
-import com.moov.app.ui.search.DummySearchMovie
 import com.moov.app.ui.search.SearchScreen
-import com.moov.app.ui.favorite.FavoriteScreen
-import com.moov.app.ui.detail.DetailScreen
-import com.moov.app.data.local.FavoriteMovieEntity
-
 
 data class BottomNavItem(
     val label: String,
@@ -34,18 +29,24 @@ fun MainScreen(onLogout: () -> Unit = {}) {
     var selectedIndex by remember { mutableStateOf(0) }
     var showEditProfile by remember { mutableStateOf(false) }
     var selectedMovie by remember { mutableStateOf<TmdbMovieDto?>(null) }
-    var selectedSearchMovie by remember { mutableStateOf<DummySearchMovie?>(null) }
+    var selectedSearchMovie by remember { mutableStateOf<TmdbMovieDto?>(null) }
     var selectedFavoriteMovie by remember { mutableStateOf<TmdbMovieDto?>(null) }
 
     // Navigasi ke Detail dari Search
-    if (selectedSearchMovie != null) {
-        selectedSearchMovie = null
+    val searchMovie = selectedSearchMovie
+    if (searchMovie != null) {
+        DetailScreen(
+            movie = searchMovie,
+            onBack = { selectedSearchMovie = null }
+        )
+        return
     }
 
     // Navigasi ke Detail dari Favorite
-    if (selectedFavoriteMovie != null) {
+    val favoriteMovie = selectedFavoriteMovie
+    if (favoriteMovie != null) {
         DetailScreen(
-            movie = selectedFavoriteMovie!!,
+            movie = favoriteMovie,
             onBack = { selectedFavoriteMovie = null }
         )
         return
@@ -58,9 +59,10 @@ fun MainScreen(onLogout: () -> Unit = {}) {
     }
 
     // Navigasi ke Detail dari Home
-    if (selectedMovie != null) {
+    val movie = selectedMovie
+    if (movie != null) {
         DetailScreen(
-            movie = selectedMovie!!,
+            movie = movie,
             onBack = { selectedMovie = null }
         )
         return

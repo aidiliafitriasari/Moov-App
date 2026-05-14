@@ -177,6 +177,16 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit = {}) {
 
             Button(
                 onClick = {
+                    // Validasi input kosong
+                    if (fullName.isBlank() || email.isBlank() || password.isBlank()) {
+                        Toast.makeText(context, "Semua kolom harus diisi!", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    // Validasi password minimal 6 karakter
+                    if (password.length < 6) {
+                        Toast.makeText(context, "Password minimal 6 karakter!", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
                     authViewModel.register(fullName, email, password) { errorMessage ->
                         if (errorMessage != null) {
                             Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()

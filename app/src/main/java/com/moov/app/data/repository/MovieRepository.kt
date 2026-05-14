@@ -33,4 +33,8 @@ class MovieRepository {
             null
         }
     }
+
+    suspend fun searchMovies(query: String): TmdbMovieResponse {
+        return RetrofitClient.apiService.searchMovies(apiKey, query)
+    }
 }

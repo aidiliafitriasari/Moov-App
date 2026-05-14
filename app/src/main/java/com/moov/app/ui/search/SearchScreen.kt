@@ -15,52 +15,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-val dummyHistory = listOf(
-    "Colony",
-    "ZonaMerah",
-    "AyahIniArahnyaKemanaYa?",
-    "TibaTibaSetan"
-)
-
-data class DummySearchMovie(
-    val title: String,
-    val year: String,
-    val genre: String,
-    val rating: Double,
-    val posterColor: Color
-)
-
-val dummyRecommended = listOf(
-    DummySearchMovie("Komang", "2025", "Drama", 8.2, Color(0xFFFFA500)),
-    DummySearchMovie("Selamat Datang!", "2024", "Comedy", 7.8, Color(0xFF32CD32)),
-    DummySearchMovie("Sejahtera Limbo", "2025", "Horror", 7.5, Color(0xFF8A2BE2)),
-    DummySearchMovie("Lahir Tidak Buka Sebagai Kami", "2024", "Drama", 8.0, Color(0xFF1E90FF))
-)
-
-val dummyAllMovies = listOf(
-    DummySearchMovie("Komang", "2025", "Drama", 8.2, Color(0xFFFFA500)),
-    DummySearchMovie("Colony", "2024", "Sci-Fi", 7.6, Color(0xFF228B22)),
-    DummySearchMovie("Zona Merah", "2024", "Horror", 7.3, Color(0xFFE50914)),
-    DummySearchMovie("Azzamine", "2024", "Romance", 7.8, Color(0xFFFF69B4)),
-    DummySearchMovie("Infinite War", "2025", "Action", 8.7, Color(0xFFE50914)),
-    DummySearchMovie("Jumbo", "2025", "Animation", 8.9, Color(0xFF4169E1)),
-    DummySearchMovie("Sekawan Limo", "2024", "Comedy", 8.0, Color(0xFF8A2BE2)),
-    DummySearchMovie("Transformers 4", "2024", "Action", 7.5, Color(0xFF1E90FF))
-)
+import com.moov.app.data.remote.TmdbMovieDto
+import com.moov.app.data.repository.MovieRepository
+import coil.compose.AsyncImage
+import kotlinx.coroutines.launch
 
 @Composable
-fun SearchScreen(onMovieClick: (DummySearchMovie) -> Unit = {}) {
+fun SearchScreen(onMovieClick: (TmdbMovieDto) -> Unit = {}) {
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
-    var searchHistory by remember { mutableStateOf(dummyHistory) }
-    var searchResults by remember { mutableStateOf<List<DummySearchMovie>>(emptyList()) }
+    var searchHistory by remember { mutableStateOf<List<String>>(emptyList()) }
+    var searchResults by remember { mutableStateOf<List<TmdbMovieDto>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(false) }
+    val repository = remember { MovieRepository() }
 
     Column(
         modifier = Modifier
@@ -75,10 +47,19 @@ fun SearchScreen(onMovieClick: (DummySearchMovie) -> Unit = {}) {
             onValueChange = { query ->
                 searchQuery = query
                 isSearching = query.isNotEmpty()
-                searchResults = if (query.isNotEmpty()) {
-                    dummyAllMovies.filter { it.title.contains(query, ignoreCase = true) }
+                if (query.isNotEmpty()) {
+                    isLoading = true
+                    kotlinx.coroutines.MainScope().launch {
+                        try {
+                            val response = repository.searchMovies(query)
+                            searchResults = response.results
+                        } catch (e: Exception) {
+                            searchResults = emptyList()
+                        }
+                        isLoading = false
+                    }
                 } else {
-                    emptyList()
+                    searchResults = emptyList()
                 }
             },
             placeholder = { Text("Search movies, series...", color = Color(0xFF757575)) },
@@ -109,11 +90,17 @@ fun SearchScreen(onMovieClick: (DummySearchMovie) -> Unit = {}) {
         Spacer(modifier = Modifier.height(16.dp))
 
         if (isSearching) {
+            // Loading
+            if (isLoading) {
+                Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFFE50914))
+                }
+            }
             // Hasil Pencarian
             Text("Search Results", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
 
-            if (searchResults.isEmpty()) {
+            if (!isLoading && searchResults.isEmpty()) {
                 Spacer(modifier = Modifier.height(40.dp))
                 Text("No results found", color = Color(0xFF757575), fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
             } else {
@@ -145,8 +132,15 @@ fun SearchScreen(onMovieClick: (DummySearchMovie) -> Unit = {}) {
                             .clickable {
                                 searchQuery = historyItem
                                 isSearching = true
-                                searchResults = dummyAllMovies.filter {
-                                    it.title.contains(historyItem, ignoreCase = true)
+                                isLoading = true
+                                kotlinx.coroutines.MainScope().launch {
+                                    try {
+                                        val response = repository.searchMovies(historyItem)
+                                        searchResults = response.results
+                                    } catch (e: Exception) {
+                                        searchResults = emptyList()
+                                    }
+                                    isLoading = false
                                 }
                             }
                             .padding(vertical = 10.dp),
@@ -161,43 +155,64 @@ fun SearchScreen(onMovieClick: (DummySearchMovie) -> Unit = {}) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Recommended
-            Text("Recommended For You", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            // Trending Movies
+            Text("Trending Movies", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(12.dp))
 
+            var trendingMovies by remember { mutableStateOf<List<TmdbMovieDto>>(emptyList()) }
+            LaunchedEffect(Unit) {
+                try {
+                    trendingMovies = repository.getTrendingMovies().results.take(4)
+                } catch (_: Exception) { }
+            }
+
             Column {
-                for (i in dummyRecommended.indices step 2) {
+                for (i in trendingMovies.indices step 2) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
                     ) {
+                        // Box Kiri
                         Box(
                             modifier = Modifier.weight(1f).padding(end = 6.dp).height(180.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Brush.verticalGradient(colors = listOf(dummyRecommended[i].posterColor, dummyRecommended[i].posterColor.copy(alpha = 0.5f)))),
+                                .background(Color.DarkGray)
+                                .clickable { onMovieClick(trendingMovies[i]) },
                             contentAlignment = Alignment.BottomStart
                         ) {
+                            AsyncImage(
+                                model = "https://image.tmdb.org/t/p/w500${trendingMovies[i].poster_path}",
+                                contentDescription = trendingMovies[i].title,
+                                modifier = Modifier.fillMaxSize()
+                            )
                             Column(modifier = Modifier.padding(12.dp)) {
-                                Text(dummyRecommended[i].title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                Text("${dummyRecommended[i].year} • ${dummyRecommended[i].genre}", color = Color(0xFFB3B3B3), fontSize = 11.sp)
+                                Text(trendingMovies[i].title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                Text("${trendingMovies[i].release_date?.take(4) ?: "N/A"}", color = Color(0xFFB3B3B3), fontSize = 11.sp)
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Filled.Star, null, tint = Color(0xFFFFD700), modifier = Modifier.size(14.dp))
-                                    Text(" ${dummyRecommended[i].rating}", color = Color(0xFFFFD700), fontSize = 12.sp)
+                                    Text(" ${"%.1f".format(trendingMovies[i].vote_average)}", color = Color(0xFFFFD700), fontSize = 12.sp)
                                 }
                             }
                         }
-                        if (i + 1 < dummyRecommended.size) {
+                        // Box Kanan
+                        if (i + 1 < trendingMovies.size) {
                             Box(
                                 modifier = Modifier.weight(1f).padding(start = 6.dp).height(180.dp)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .background(Brush.verticalGradient(colors = listOf(dummyRecommended[i + 1].posterColor, dummyRecommended[i + 1].posterColor.copy(alpha = 0.5f)))),
+                                    .background(Color.DarkGray)
+                                    .clickable { onMovieClick(trendingMovies[i + 1]) },
                                 contentAlignment = Alignment.BottomStart
                             ) {
+                                AsyncImage(
+                                    model = "https://image.tmdb.org/t/p/w500${trendingMovies[i + 1].poster_path}",
+                                    contentDescription = trendingMovies[i + 1].title,
+                                    modifier = Modifier.fillMaxSize()
+                                )
                                 Column(modifier = Modifier.padding(12.dp)) {
-                                    Text(dummyRecommended[i + 1].title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                    Text("${dummyRecommended[i + 1].year} • ${dummyRecommended[i + 1].genre}", color = Color(0xFFB3B3B3), fontSize = 11.sp)
+                                    Text(trendingMovies[i + 1].title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    Text("${trendingMovies[i + 1].release_date?.take(4) ?: "N/A"}", color = Color(0xFFB3B3B3), fontSize = 11.sp)
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(Icons.Filled.Star, null, tint = Color(0xFFFFD700), modifier = Modifier.size(14.dp))
-                                        Text(" ${dummyRecommended[i + 1].rating}", color = Color(0xFFFFD700), fontSize = 12.sp)
+                                        Text(" ${"%.1f".format(trendingMovies[i + 1].vote_average)}", color = Color(0xFFFFD700), fontSize = 12.sp)
                                     }
                                 }
                             }
@@ -212,7 +227,7 @@ fun SearchScreen(onMovieClick: (DummySearchMovie) -> Unit = {}) {
 }
 
 @Composable
-fun SearchMovieItem(movie: DummySearchMovie, onClick: () -> Unit) {
+fun SearchMovieItem(movie: TmdbMovieDto, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -224,20 +239,24 @@ fun SearchMovieItem(movie: DummySearchMovie, onClick: () -> Unit) {
     ) {
         Box(
             modifier = Modifier.width(50.dp).height(70.dp).clip(RoundedCornerShape(6.dp))
-                .background(Brush.verticalGradient(colors = listOf(movie.posterColor, movie.posterColor.copy(alpha = 0.6f)))),
+                .background(Color.DarkGray),
             contentAlignment = Alignment.Center
         ) {
-            Text(movie.title.first().toString(), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            AsyncImage(
+                model = "https://image.tmdb.org/t/p/w500${movie.poster_path}",
+                contentDescription = movie.title,
+                modifier = Modifier.fillMaxSize()
+            )
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(movie.title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(modifier = Modifier.height(4.dp))
-            Text("${movie.year} • ${movie.genre}", color = Color(0xFFB3B3B3), fontSize = 12.sp)
+            Text("${movie.release_date?.take(4) ?: "N/A"}", color = Color(0xFFB3B3B3), fontSize = 12.sp)
             Spacer(modifier = Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.Star, null, tint = Color(0xFFFFD700), modifier = Modifier.size(14.dp))
-                Text(" ${movie.rating}", color = Color(0xFFFFD700), fontSize = 12.sp)
+                Text(" ${"%.1f".format(movie.vote_average)}", color = Color(0xFFFFD700), fontSize = 12.sp)
             }
         }
     }
