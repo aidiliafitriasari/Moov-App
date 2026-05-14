@@ -13,31 +13,30 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.moov.app.data.local.FavoriteMovieEntity
+import com.moov.app.data.local.MovieDatabase
+import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
+import kotlinx.coroutines.launch
 
-data class FavoriteMovie(
-    val id: Int,
-    val title: String,
-    val subtitle: String,
-    val genre: String,
-    val rating: Double,
-    val posterColor: Color
-)
 
 @Composable
 fun FavoriteScreen() {
-    val dummyFavorites = remember {
-        mutableStateListOf(
-            FavoriteMovie(1, "Komang", "LEBARAN 2025", "Drama Romantis", 8.0, Color(0xFFFFA500)),
-            FavoriteMovie(2, "Jumbo", "LEBARAN 2025 DI BIOSKOP", "Petualangan", 8.9, Color(0xFF4169E1)),
-            FavoriteMovie(3, "Sekawan Limo", "4 JULI 2024", "Sekawan Limo", 7.8, Color(0xFF8A2BE2)),
-            FavoriteMovie(4, "Janur Irong Sewu Dino", "24 DECEMBER 2025", "Janur Irong Sewu Dino", 8.7, Color(0xFF2F4F4F))
-        )
+    val context = LocalContext.current
+    val db = remember { MovieDatabase.getDatabase(context) }
+    val dao = remember { db.favoriteMovieDao() }
+    val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+    var favorites by remember { mutableStateOf<List<FavoriteMovieEntity>>(emptyList()) }
+
+    LaunchedEffect(userId) {
+        favorites = dao.getFavoritesByUser(userId)
     }
 
     Column(
@@ -47,7 +46,6 @@ fun FavoriteScreen() {
             .padding(16.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        // Header
         Text(
             text = "Favorite",
             fontSize = 28.sp,
@@ -57,12 +55,9 @@ fun FavoriteScreen() {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Empty state
-        if (dummyFavorites.isEmpty()) {
+        if (favorites.isEmpty()) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp),
+                modifier = Modifier.fillMaxWidth().height(200.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -73,8 +68,7 @@ fun FavoriteScreen() {
             }
         }
 
-        // Grid 2 kolom
-        val chunkedMovies = dummyFavorites.chunked(2)
+        val chunkedMovies = favorites.chunked(2)
         chunkedMovies.forEach { rowMovies ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -83,11 +77,16 @@ fun FavoriteScreen() {
                 rowMovies.forEach { movie ->
                     FavoriteCard(
                         movie = movie,
-                        onDelete = { dummyFavorites.remove(movie) },
+                        onDelete = {
+                            // Hapus dari Room DB
+                            kotlinx.coroutines.MainScope().launch {
+                                dao.deleteFavorite(movie)
+                                favorites = dao.getFavoritesByUser(userId)
+                            }
+                        },
                         modifier = Modifier.weight(1f)
                     )
                 }
-                // Jika baris terakhir hanya 1 item, isi sisa dengan spacer
                 if (rowMovies.size == 1) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
@@ -100,7 +99,7 @@ fun FavoriteScreen() {
 }
 
 @Composable
-fun FavoriteCard(movie: FavoriteMovie, onDelete: () -> Unit, modifier: Modifier = Modifier) {
+fun FavoriteCard(movie: FavoriteMovieEntity, onDelete: () -> Unit, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
@@ -113,17 +112,15 @@ fun FavoriteCard(movie: FavoriteMovie, onDelete: () -> Unit, modifier: Modifier 
                     .fillMaxWidth()
                     .height(200.dp)
                     .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                movie.posterColor,
-                                movie.posterColor.copy(alpha = 0.5f)
-                            )
-                        )
-                    ),
+                    .background(Color.DarkGray),
                 contentAlignment = Alignment.Center
+
             ) {
-                Text("🎬", fontSize = 48.sp)
+                AsyncImage(
+                    model = "https://image.tmdb.org/t/p/w500${movie.posterPath}",
+                    contentDescription = movie.title,
+                    modifier = Modifier.fillMaxSize()
+                )
 
                 // Tombol hapus di pojok kanan bawah poster
                 IconButton(
@@ -167,7 +164,7 @@ fun FavoriteCard(movie: FavoriteMovie, onDelete: () -> Unit, modifier: Modifier 
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "${movie.rating}",
+                        text = "${movie.voteAverage}",
                         color = Color.White,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold
@@ -178,7 +175,7 @@ fun FavoriteCard(movie: FavoriteMovie, onDelete: () -> Unit, modifier: Modifier 
 
                 // Genre
                 Text(
-                    text = movie.genre,
+                    text = movie.genreIds,
                     color = Color(0xFF757575),
                     fontSize = 12.sp,
                     maxLines = 1,
